@@ -1,0 +1,18 @@
+[package]
+name = "mbedtls"
+version = "0.1.0"
+authors = ["Erik Johnston"]
+build = "build.rs"
+
+[dependencies]
+time = "0.1"
+slab = "0.1.0"
+# clippy = "*"
+bytes = { git = "https://github.com/carllerche/bytes", rev = "7edb577d0a" }
+
+[dependencies.mio]
+git = "https://github.com/carllerche/mio"
+
+
+[build-dependencies]
+bindgen = "0.15.0"
