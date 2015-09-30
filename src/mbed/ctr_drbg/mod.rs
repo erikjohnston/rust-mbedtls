@@ -8,3 +8,13 @@ mod ctr_drbg_context;
 pub mod error;
 
 pub use self::ctr_drbg_context::CtrDrbgContext;
+
+
+pub extern fn random(
+    rng: *mut ::libc::c_void,
+    output: *mut ::libc::c_uchar, len: ::libc::size_t
+) -> ::libc::c_int {
+    unsafe {
+        bindings::mbedtls_ctr_drbg_random(rng, output, len)
+    }
+}

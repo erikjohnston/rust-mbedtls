@@ -4,13 +4,31 @@ use ::mbed::entropy;
 
 use std::ptr;
 use std::marker::PhantomData;
+use std::convert::Into;
+use std::slice;
+use std::mem::transmute;
 
 use super::error;
 
 
+extern "C" fn wrap_entropy_callback<F: FnMut(&[u8]) -> Result<(),()>>(
+        target: *mut ::libc::c_void,
+        output: *mut ::libc::c_uchar, len: ::libc::size_t
+    ) -> ::libc::c_int {
+    unsafe {
+        let mut f : *mut F = transmute(target);
+        let r = (*f)(slice::from_raw_parts_mut(output, len as usize));
+        match r {
+            Ok(()) => 0,
+            Err(()) => -1,
+        }
+    }
+}
+
+
 pub struct CtrDrbgContext<'a> {
     inner: bindings::mbedtls_ctr_drbg_context,
-    phantom: PhantomData<&'a entropy::EntropyContext>
+    phantom: PhantomData<&'a entropy::EntropyContext>,
 }
 
 impl <'a> CtrDrbgContext<'a> {
@@ -26,23 +44,26 @@ impl <'a> CtrDrbgContext<'a> {
         ctx
     }
 
-    pub fn seed(&mut self, entropy: &'a mut entropy::EntropyContext, customization: Option<&[u8]>)
-    -> Result<(), error::EntropyError> {
+    pub fn seed<F: FnMut(&[u8]) -> Result<(),()>>(
+        &mut self,
+        mut entropy_func: Option<&'a mut F>,
+        customization: Option<&[u8]>
+    ) -> Result<(), error::EntropyError> {
         let r = unsafe {
-            match customization {
-                Some(data) => bindings::mbedtls_ctr_drbg_seed(
+            match entropy_func {
+                Some(func) => bindings::mbedtls_ctr_drbg_seed(
                     &mut self.inner,
-                    Some(entropy::entropy_func),
-                    &mut entropy.inner_mut() as *mut _ as *mut ::libc::c_void,
-                    data.as_ptr(),
-                    data.len() as u64
+                    Some(wrap_entropy_callback::<F>),
+                    func as *mut _ as *mut ::libc::c_void,
+                    customization.map_or(ptr::null(), |data| data.as_ptr()),
+                    customization.map_or(0, |data| data.len() as u64),
                 ),
                 None => bindings::mbedtls_ctr_drbg_seed(
                     &mut self.inner,
-                    Some(entropy::entropy_func),
-                    &mut entropy.inner_mut() as *mut _ as *mut ::libc::c_void,
-                    ptr::null(),
-                    0
+                    None,
+                    ptr::null_mut(),
+                    customization.map_or(ptr::null(), |data| data.as_ptr()),
+                    customization.map_or(0, |data| data.len() as u64),
                 )
             }
         };

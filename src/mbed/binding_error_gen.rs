@@ -19,6 +19,15 @@ macro_rules! create_error {
                     $ErrorName::Unknown(err_code)
                 }
             }
+
+            pub fn to_int(&self) -> i32 {
+                match *self {
+                    // Both underlying errors already impl `Display`, so we defer to
+                    // their implementations.
+                    $( $ErrorName::$en => $ev.0, )+
+                    $ErrorName::Unknown(err) => err,
+                }
+            }
         }
 
         impl fmt::Display for $ErrorName {
@@ -42,6 +51,12 @@ macro_rules! create_error {
 
             fn cause(&self) -> Option<&error::Error> {
                 None
+            }
+        }
+
+        impl From<i32> for $ErrorName {
+            fn from(err_code: i32) -> Self {
+                $ErrorName::from_code(err_code)
             }
         }
     }
