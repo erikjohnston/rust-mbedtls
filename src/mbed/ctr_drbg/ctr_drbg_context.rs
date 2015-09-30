@@ -5,7 +5,7 @@ use ::mbed::entropy;
 use std::ptr;
 use std::marker::PhantomData;
 
-use super::{error, MBEDTLS_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED};
+use super::error;
 
 
 pub struct CtrDrbgContext<'a> {
@@ -49,8 +49,7 @@ impl <'a> CtrDrbgContext<'a> {
 
         match r {
             0 => Ok(()),
-            MBEDTLS_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED => Err(error::EntropyError::SourceFailed),
-            d @ _ => Err(error::EntropyError::Unknown(d)),
+            d @ _ => Err(error::EntropyError::from_code(d)),
         }
     }
 }

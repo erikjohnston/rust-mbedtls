@@ -8,6 +8,3 @@ mod ctr_drbg_context;
 pub mod error;
 
 pub use self::ctr_drbg_context::CtrDrbgContext;
-
-// MBEDTLS_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED
-const MBEDTLS_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED : i32 = -0x34;
