@@ -54,3 +54,24 @@ pub const MBEDTLS_ERR_SSL_WANT_READ                       : (i32, &'static str) 
 pub const MBEDTLS_ERR_SSL_WANT_WRITE                      : (i32, &'static str) = (-0x6880, "Connection requires a write call.");
 pub const MBEDTLS_ERR_SSL_TIMEOUT                         : (i32, &'static str) = (-0x6800, "The operation timed out.");
 pub const MBEDTLS_ERR_SSL_CLIENT_RECONNECT                : (i32, &'static str) = (-0x6780, "The client initiated a reconnect from the same port.");
+
+
+// ** SETTTINGS **
+
+// Endpoint mode
+pub const MBEDTLS_SSL_IS_CLIENT : i32 = 0;
+pub const MBEDTLS_SSL_IS_SERVER : i32 = 1;
+
+// transport type
+pub const  MBEDTLS_SSL_TRANSPORT_STREAM   : i32 = 0;
+pub const  MBEDTLS_SSL_TRANSPORT_DATAGRAM : i32 = 1;
+
+// Presets, unused.
+pub const MBEDTLS_SSL_PRESET_DEFAULT : i32 = 0;
+pub const MBEDTLS_SSL_PRESET_SUITEB  : i32 = 2;
+
+// Auth mode options.
+pub const MBEDTLS_SSL_VERIFY_NONE      : i32 = 0;
+pub const MBEDTLS_SSL_VERIFY_OPTIONAL  : i32 = 1;
+pub const MBEDTLS_SSL_VERIFY_REQUIRED  : i32 = 2;
+pub const MBEDTLS_SSL_VERIFY_UNSET     : i32 = 3; /* Used only for sni_authmode */

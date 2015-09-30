@@ -6,6 +6,6 @@ mod ssl_context;
 mod ssl_config;
 mod x509_cert;
 
-pub use self::ssl_context::SSLContext;
-pub use self::ssl_config::SSLConfig;
-pub use self::x509_cert::X509Cert;
+pub use self::ssl_context::*;
+pub use self::ssl_config::*;
+pub use self::x509_cert::*;
