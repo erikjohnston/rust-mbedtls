@@ -55,14 +55,14 @@ impl <'a> SSLConfig<'a> {
     }
 
     /// Set the random number generator callback
-    pub fn set_rng<F: FnMut(&[u8]) -> Result<(),()>>(
+    pub fn set_rng<E, F: FnMut(&mut [u8]) -> Result<(), E>>(
         &mut self,
         mut rng_func: &'a mut F,
     ) {
         unsafe {
             bindings::mbedtls_ssl_conf_rng(
                 &mut self.inner,
-                Some(wrap_rng_callback::<F>),
+                Some(wrap_rng_callback::<E, F>),
                 rng_func as *mut _ as *mut ::libc::c_void,
             );
         }
@@ -106,7 +106,7 @@ create_enum!{
 
 
 /// Wraps a callback for use in mbedtls_ssl_conf_rng
-extern "C" fn wrap_rng_callback<F: FnMut(&[u8]) -> Result<(),()>>(
+extern "C" fn wrap_rng_callback<E, F: FnMut(&mut [u8]) -> Result<(),E>>(
         target: *mut ::libc::c_void,
         output: *mut ::libc::c_uchar, len: ::libc::size_t
     ) -> ::libc::c_int {
@@ -115,7 +115,7 @@ extern "C" fn wrap_rng_callback<F: FnMut(&[u8]) -> Result<(),()>>(
         let r = (*f)(slice::from_raw_parts_mut(output, len as usize));
         match r {
             Ok(()) => 0,
-            Err(()) => -1,
+            Err(_) => -1,
         }
     }
 }
