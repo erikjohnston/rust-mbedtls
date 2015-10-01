@@ -6,13 +6,3 @@ pub mod constants;
 mod entropy_context;
 
 pub use self::entropy_context::EntropyContext;
-
-
-pub extern fn entropy_func(
-    data: *mut ::libc::c_void,
-    output: *mut ::libc::c_uchar, len: ::libc::size_t
-) -> ::libc::c_int {
-    unsafe {
-        bindings::mbedtls_entropy_func(data, output, len)
-    }
-}

@@ -10,9 +10,10 @@ fn main() {
     let mut ssl_config = mbed::ssl::SSLConfig::new();
 
     let mut entropy = mbedtls::mbed::entropy::EntropyContext::new();
+    let mut entropy_func = |d : &mut[u8] | entropy.entropy_func(d);
     let mut ctr_drbg = mbed::ctr_drbg::CtrDrbgContext::new();
 
-    ctr_drbg.seed(&mut entropy, None).unwrap();
+    ctr_drbg.seed(&mut entropy_func, None).unwrap();
 
     let mut stream = TcpStream::connect("127.0.0.1:34254").unwrap();
 

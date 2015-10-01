@@ -9,3 +9,9 @@ create_error!{
     AllocFailedError:
         SSL => MBEDTLS_ERR_SSL_ALLOC_FAILED
 }
+
+
+pub trait CError : Sized {
+    fn from_code(err_code : i32) -> Result<i32, Self>;
+    fn to_int(&self) -> i32;
+}

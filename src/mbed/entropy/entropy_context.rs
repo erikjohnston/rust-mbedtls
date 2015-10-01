@@ -23,6 +23,22 @@ impl EntropyContext {
     pub fn inner_mut(&mut self) -> &mut bindings::mbedtls_entropy_context {
         &mut self.inner
     }
+
+    /// Retrieve entropy from the accumulator
+    pub fn entropy_func(&mut self, output: &mut [u8]) -> Result<(),()> {
+        let r = unsafe {
+            bindings::mbedtls_entropy_func(
+                &mut self.inner as * mut _ as *mut ::libc::c_void,
+                output.as_mut_ptr(),
+                output.len() as u64,
+            )
+        };
+
+        match r {
+           0 => Ok(()),
+           _ => Err(()),
+        }
+    }
 }
 
 impl Drop for EntropyContext {

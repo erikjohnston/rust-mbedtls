@@ -2,25 +2,28 @@
 
 macro_rules! create_error {
     ($ErrorName:ident: $($en:ident => $ev:expr),+ ) => {
-        #[derive(Debug)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
         pub enum $ErrorName {
             $( $en, )+
             Unknown(i32),
         }
 
-        impl $ErrorName {
-            pub fn from_code(err_code : i32) -> $ErrorName {
+        impl CError for $ErrorName {
+            fn from_code(r : i32) -> Result<i32, Self> {
+                if r >= 0 {
+                    Ok(r)
+                }
                 $(
-                    if err_code == $ev.0 {
-                        $ErrorName::$en
+                    else if r == $ev.0 {
+                        Err($ErrorName::$en)
                     }
-                )else+
+                )+
                 else {
-                    $ErrorName::Unknown(err_code)
+                    Err($ErrorName::Unknown(r))
                 }
             }
 
-            pub fn to_int(&self) -> i32 {
+            fn to_int(&self) -> i32 {
                 match *self {
                     // Both underlying errors already impl `Display`, so we defer to
                     // their implementations.
@@ -54,10 +57,5 @@ macro_rules! create_error {
             }
         }
 
-        impl From<i32> for $ErrorName {
-            fn from(err_code: i32) -> Self {
-                $ErrorName::from_code(err_code)
-            }
-        }
     }
 }

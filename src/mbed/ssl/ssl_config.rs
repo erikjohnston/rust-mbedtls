@@ -1,17 +1,26 @@
 use super::bindings;
 use super::constants::*;
 
+use mbed::error::CError;
 use mbed::error::AllocFailedError;
 
+use std::marker::PhantomData;
+use std::mem::transmute;
+use std::slice;
 
-pub struct SSLConfig {
+/// SSL/TLS configuration to be shared between SSLContext structures
+///
+/// Corresponds to: mbedtls_ssl_context
+pub struct SSLConfig<'a> {
     inner: bindings::mbedtls_ssl_config,
+    phantom: PhantomData<&'a ()>,
 }
 
-impl SSLConfig {
+impl <'a> SSLConfig<'a> {
     pub fn new() -> Self {
         let mut ctx = SSLConfig {
-            inner: bindings::mbedtls_ssl_config::default()
+            inner: bindings::mbedtls_ssl_config::default(),
+            phantom: PhantomData,
         };
         unsafe {
             bindings::mbedtls_ssl_config_init(&mut ctx.inner);
@@ -20,6 +29,7 @@ impl SSLConfig {
         ctx
     }
 
+    /// Load reasonnable default SSL configuration values.
     pub fn set_defaults(&mut self, endpoint: EndpointType, transport: TransportType, preset: SSLPreset)
     -> Result<(), AllocFailedError> {
         unsafe {
@@ -30,14 +40,11 @@ impl SSLConfig {
                 preset.to_int(),
             );
 
-            if r < 0 {
-                Err(AllocFailedError::from_code(r))
-            } else {
-                Ok(())
-            }
+            AllocFailedError::from_code(r).map(|_| ())
         }
     }
 
+    /// Set authmode for the current handshake.
     pub fn set_authmode(&mut self, auth_mode: AuthMode) {
         unsafe {
             bindings::mbedtls_ssl_conf_authmode(
@@ -46,9 +53,23 @@ impl SSLConfig {
             );
         }
     }
+
+    /// Set the random number generator callback
+    pub fn set_rng<F: FnMut(&[u8]) -> Result<(),()>>(
+        &mut self,
+        mut rng_func: &'a mut F,
+    ) {
+        unsafe {
+            bindings::mbedtls_ssl_conf_rng(
+                &mut self.inner,
+                Some(wrap_rng_callback::<F>),
+                rng_func as *mut _ as *mut ::libc::c_void,
+            );
+        }
+    }
 }
 
-impl Drop for SSLConfig {
+impl <'a> Drop for SSLConfig<'a> {
     fn drop(&mut self) {
         unsafe {
             bindings::mbedtls_ssl_config_free(&mut self.inner);
@@ -81,4 +102,20 @@ create_enum!{
         VerifyOptional => MBEDTLS_SSL_VERIFY_OPTIONAL,
         VerifyRequired => MBEDTLS_SSL_VERIFY_REQUIRED,
         VerifyUnsey => MBEDTLS_SSL_VERIFY_UNSET
+}
+
+
+/// Wraps a callback for use in mbedtls_ssl_conf_rng
+extern "C" fn wrap_rng_callback<F: FnMut(&[u8]) -> Result<(),()>>(
+        target: *mut ::libc::c_void,
+        output: *mut ::libc::c_uchar, len: ::libc::size_t
+    ) -> ::libc::c_int {
+    unsafe {
+        let f : *mut F = transmute(target);
+        let r = (*f)(slice::from_raw_parts_mut(output, len as usize));
+        match r {
+            Ok(()) => 0,
+            Err(()) => -1,
+        }
+    }
 }
