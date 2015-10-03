@@ -53,7 +53,7 @@ impl <'a> SSLContext<'a> {
                 Some(wrap_bio_send_callback::<ESend, FSend, ERead, FRead>),
                 Some(wrap_bio_read_callback::<ESend, FSend, ERead, FRead>),
                 None,
-            )
+            );
         };
     }
 }
