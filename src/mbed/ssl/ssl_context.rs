@@ -165,6 +165,41 @@ impl <'a> SSLContext<'a> {
 
         error::SSLError::from_code(r).map(|_| ())
     }
+
+    /// Set client's transport-level identification info.
+    ///
+    /// (Server only. DTLS only.)
+    ///
+    /// This is usually the IP address (and port), but could be anything identify the client
+    /// depending on the underlying network stack. Used for HelloVerifyRequest with DTLS. This is
+    /// not used to route the actual packets.
+    ///
+    /// Returns: SSLError::BadInputData if used on client, SSLError::AllocFailed if out of memory.
+    pub fn set_client_transport_id(&mut self, info: &[u8]) -> Result<(), error::SSLError> {
+        let r = unsafe {
+            bindings::mbedtls_ssl_set_client_transport_id(
+                &mut self.inner,
+                info.as_ptr(), info.len() as u64
+            )
+        };
+
+        error::SSLError::from_code(r).map(|_| ())
+    }
+
+    /// Get the name of the negotiated Application Layer Protocol.
+    ///
+    /// This function should be called after the handshake is completed.
+    pub fn get_alpn_protocol(&self) -> Option<&'a CStr> {
+        unsafe {
+            let ret = bindings::mbedtls_ssl_get_alpn_protocol(&self.inner);
+
+            if !ret.is_null() {
+                Some(CStr::from_ptr(ret))
+            } else {
+                None
+            }
+        }
+    }
 }
 
 impl <'a> Drop for SSLContext<'a> {
