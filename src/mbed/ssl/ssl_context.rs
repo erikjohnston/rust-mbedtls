@@ -200,6 +200,29 @@ impl <'a> SSLContext<'a> {
             }
         }
     }
+
+    /// Return the number of data bytes available to read.
+    pub fn get_bytes_avail(&self) -> usize {
+        unsafe {
+            bindings::mbedtls_ssl_get_bytes_avail(&self.inner) as usize
+        }
+    }
+
+    /// Return the current SSL version (SSLv3/TLSv1/etc)
+    pub fn get_version(&self) -> &'static CStr {
+        unsafe {
+            let r = bindings::mbedtls_ssl_get_version(&self.inner);
+            CStr::from_ptr(r)
+        }
+    }
+
+    /// Return the name of the current ciphersuite.
+    pub fn get_ciphersuite(&self) -> &'static CStr {
+        unsafe {
+            let r = bindings::mbedtls_ssl_get_ciphersuite(&self.inner);
+            CStr::from_ptr(r)
+        }
+    }
 }
 
 impl <'a> Drop for SSLContext<'a> {
