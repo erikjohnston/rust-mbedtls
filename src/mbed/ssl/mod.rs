@@ -13,5 +13,29 @@ pub use self::ssl_context::*;
 pub use self::ssl_config::*;
 pub use self::x509_cert::*;
 
+use std::slice;
+use std::ffi::CStr;
+
 
 pub enum SSLAlertLevel { Fatal, Warning }
+
+pub fn list_ciphersuites() -> &'static [i32] {
+    unsafe {
+        let suite_ids = bindings::mbedtls_ssl_list_ciphersuites();
+
+        let mut length = 0;
+        while *suite_ids.offset(length as isize) != 0 {
+            length += 1;
+        }
+
+        slice::from_raw_parts(suite_ids, length)
+    }
+}
+
+pub fn get_ciphersuite_name(suite_id: i32) -> &'static CStr {
+    unsafe {
+        let name = bindings::mbedtls_ssl_get_ciphersuite_name(suite_id);
+
+        CStr::from_ptr(name)
+    }
+}
