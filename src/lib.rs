@@ -15,5 +15,4 @@ pub mod mbed;
 fn it_works() {
     mbed::ssl::SSLContext::new();
     mbed::entropy::EntropyContext::new();
-    mbed::ctr_drbg::CtrDrbgContext::new();
 }
