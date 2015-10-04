@@ -3,6 +3,7 @@ use super::error;
 use std::marker::PhantomData;
 
 use std::ffi::CStr;
+use std::io;
 use std::mem::transmute;
 use std::slice;
 
@@ -41,17 +42,13 @@ impl <'a> SSLContext<'a> {
     }
 
     /// Set the underlying BIO callbacks for write and read.
-    pub fn set_bio_async<
-        ESend: CError, FSend: FnMut(&[u8]) -> Result<i32, ESend>,
-        ERead: CError, FRead: FnMut(&mut [u8]) -> Result<i32, ERead>
-    >(&mut self, send_fn: &'a mut FSend, read_fn: &'a mut FRead) {
+    pub fn set_bio_async<E : CError, IO : Read<E> + Write<E>>(&mut self, io: &'a mut IO) {
         unsafe {
-            let mut cb = BioCallbacks{send: send_fn, read: read_fn};
             bindings::mbedtls_ssl_set_bio(
                 &mut self.inner,
-                &mut cb as *mut _ as *mut ::libc::c_void,
-                Some(wrap_bio_send_callback::<ESend, FSend, ERead, FRead>),
-                Some(wrap_bio_read_callback::<ESend, FSend, ERead, FRead>),
+                io as *mut _ as *mut ::libc::c_void,
+                Some(wrap_bio_send_callback::<E, IO>),
+                Some(wrap_bio_read_callback::<E, IO>),
                 None,
             );
         };
@@ -67,43 +64,60 @@ impl <'a> Drop for SSLContext<'a> {
 }
 
 
-struct BioCallbacks<
-    ESend: CError, FSend: FnMut(&[u8]) -> Result<i32, ESend>,
-    ERead: CError, FRead: FnMut(&mut [u8]) -> Result<i32, ERead>
-> {
-    pub send: FSend,
-    pub read: FRead,
+pub trait Write<E: CError> {
+    fn write(&mut self, buf: &[u8]) -> Result<usize, E>;
 }
 
-extern "C" fn wrap_bio_send_callback<
-    ESend: CError, FSend: FnMut(&[u8]) -> Result<i32, ESend>,
-    ERead: CError, FRead: FnMut(&mut [u8]) -> Result<i32, ERead>
->(
+pub trait Read<E: CError> {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize, E>;
+}
+
+
+impl <T: io::Write> Write<io::Error> for T {
+    fn write(&mut self, buf: &[u8]) -> Result<usize, io::Error> {
+        self.write(buf)
+    }
+}
+
+impl <T: io::Read> Read<io::Error> for T {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize, io::Error> {
+        self.read(buf)
+    }
+}
+
+impl CError for io::Error {
+    fn to_int(&self) -> i32 {
+        match self.kind() {
+            io::ErrorKind::WouldBlock => -1,
+            _ => -1,
+        }
+    }
+}
+
+
+extern "C" fn wrap_bio_send_callback<E: CError, IO : Read<E> + Write<E>>(
     target: *mut ::libc::c_void,
     output: *const ::libc::c_uchar, len: ::libc::size_t
 ) -> ::libc::c_int {
     unsafe {
-        let f : *mut BioCallbacks<ESend, FSend, ERead, FRead> = transmute(target);
-        let r = ((*f).send)(slice::from_raw_parts(output, len as usize));
+        let f : *mut IO = transmute(target);
+        let r = (*f).write(slice::from_raw_parts(output, len as usize));
         match r {
-            Ok(i) => i,
+            Ok(i) => i as i32,
             Err(e) => e.to_int(),
         }
     }
 }
 
-extern "C" fn wrap_bio_read_callback<
-    ESend: CError, FSend: FnMut(&[u8]) -> Result<i32, ESend>,
-    ERead: CError, FRead: FnMut(&mut [u8]) -> Result<i32, ERead>
->(
+extern "C" fn wrap_bio_read_callback<E : CError, IO : Read<E> + Write<E>>(
     target: *mut ::libc::c_void,
     output: *mut ::libc::c_uchar, len: ::libc::size_t
 ) -> ::libc::c_int {
     unsafe {
-        let f : *mut BioCallbacks<ESend, FSend, ERead, FRead> = transmute(target);
-        let r = ((*f).read)(slice::from_raw_parts_mut(output, len as usize));
+        let f : *mut IO = transmute(target);
+        let r = (*f).read(slice::from_raw_parts_mut(output, len as usize));
         match r {
-            Ok(i) => i,
+            Ok(i) => i as i32,
             Err(e) => e.to_int(),
         }
     }

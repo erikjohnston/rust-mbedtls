@@ -8,7 +8,6 @@ use std::slice;
 use std::mem::transmute;
 
 use super::error;
-use mbed::error::CError;
 
 
 /// CTR_DRBG context structure

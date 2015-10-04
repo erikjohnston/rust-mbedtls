@@ -1,4 +1,4 @@
-use std::io::prelude::*;
+// use std::io::prelude::*;
 use std::net::TcpStream;
 use std::ffi::CString;
 
@@ -7,6 +7,8 @@ extern crate mbedtls;
 use mbedtls::mbed;
 
 fn main() {
+    let mut stream = TcpStream::connect("127.0.0.1:34254").unwrap();
+
     let mut entropy = mbedtls::mbed::entropy::EntropyContext::new();
     let mut entropy_func = |d : &mut[u8] | entropy.entropy_func(d);
 
@@ -20,8 +22,6 @@ fn main() {
 
     ssl_config.set_rng(&mut random_func);
 
-    let mut stream = TcpStream::connect("127.0.0.1:34254").unwrap();
-
     ssl_config.set_defaults(
         mbed::ssl::EndpointType::Client,
         mbed::ssl::TransportType::Stream,
@@ -32,6 +32,8 @@ fn main() {
 
     ssl_context.set_hostname(&CString::new("mbed TLS Server 1").unwrap()).unwrap();
 
-    let _ = stream.write("GET / HTTP/1.1\r\n\r\n".as_bytes());
-    let _ = stream.read(&mut [0; 128]);
+    ssl_context.set_bio_async(&mut stream);
+
+    // let _ = stream.write("GET / HTTP/1.1\r\n\r\n".as_bytes());
+    // let _ = stream.read(&mut [0; 128]);
 }

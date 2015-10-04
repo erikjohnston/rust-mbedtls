@@ -12,20 +12,11 @@ create_error!{
 
 
 pub trait CError : Sized {
-    fn from_code(err_code : i32) -> Result<i32, Self>;
     fn to_int(&self) -> i32;
 }
 
 
 impl CError for i32 {
-    fn from_code(err_code : i32) -> Result<i32, Self> {
-        if err_code >= 0 {
-            Ok(err_code)
-        } else {
-            Err(err_code)
-        }
-    }
-
     fn to_int(&self) -> i32 {
         return *self;
     }

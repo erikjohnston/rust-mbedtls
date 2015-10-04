@@ -8,8 +8,8 @@ macro_rules! create_error {
             Unknown(i32),
         }
 
-        impl CError for $ErrorName {
-            fn from_code(r : i32) -> Result<i32, Self> {
+        impl $ErrorName {
+            pub fn from_code(r : i32) -> Result<i32, Self> {
                 if r >= 0 {
                     Ok(r)
                 }
@@ -23,6 +23,9 @@ macro_rules! create_error {
                 }
             }
 
+        }
+
+        impl CError for $ErrorName {
             fn to_int(&self) -> i32 {
                 match *self {
                     // Both underlying errors already impl `Display`, so we defer to
