@@ -56,7 +56,12 @@ pub const MBEDTLS_ERR_SSL_TIMEOUT                         : (i32, &'static str) 
 pub const MBEDTLS_ERR_SSL_CLIENT_RECONNECT                : (i32, &'static str) = (-0x6780, "The client initiated a reconnect from the same port.");
 
 
-// ** SETTTINGS **
+pub const MBEDTLS_SSL_MAJOR_VERSION_3 : i32 = 3;
+pub const MBEDTLS_SSL_MINOR_VERSION_0 : i32 = 0;   /*< SSL v3.0 */
+pub const MBEDTLS_SSL_MINOR_VERSION_1 : i32 = 1;   /*< TLS v1.0 */
+pub const MBEDTLS_SSL_MINOR_VERSION_2 : i32 = 2;   /*< TLS v1.1 */
+pub const MBEDTLS_SSL_MINOR_VERSION_3 : i32 = 3;   /*< TLS v1.2 */
+
 
 // Endpoint mode
 pub const MBEDTLS_SSL_IS_CLIENT : i32 = 0;

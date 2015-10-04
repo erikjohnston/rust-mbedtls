@@ -19,6 +19,9 @@ use std::ffi::CStr;
 
 pub enum SSLAlertLevel { Fatal, Warning }
 
+#[allow(non_camel_case_types)]
+pub enum SSLVersion { SSLv3, TLSv1_0, TLSv1_1, TLSv1_2 }
+
 
 /// Returns the list of ciphersuites supported by the SSL/TLS module.
 pub fn list_ciphersuites() -> &'static [i32] {

@@ -1,4 +1,4 @@
-use super::bindings;
+use super::{bindings, SSLVersion};
 use super::constants::*;
 
 use mbed::error::CError;
@@ -68,6 +68,39 @@ impl <'a> SSLConfig<'a> {
                 &mut self.inner,
                 Some(wrap_rng_callback::<E, F>),
                 rng_func as *mut _ as *mut ::libc::c_void,
+            );
+        }
+    }
+
+    /// Set the maximum supported version sent from the client side and/or accepted at the server
+    /// side.
+    pub fn min_version(&mut self, version: SSLVersion) {
+        unsafe {
+            let minor = match version {
+                SSLVersion::SSLv3 => MBEDTLS_SSL_MINOR_VERSION_0,
+                SSLVersion::TLSv1_0 => MBEDTLS_SSL_MINOR_VERSION_1,
+                SSLVersion::TLSv1_1 => MBEDTLS_SSL_MINOR_VERSION_2,
+                SSLVersion::TLSv1_2 => MBEDTLS_SSL_MINOR_VERSION_3,
+            };
+
+            bindings::mbedtls_ssl_conf_min_version(
+                &mut self.inner, MBEDTLS_SSL_MAJOR_VERSION_3, minor
+            );
+        }
+    }
+
+    /// Set the minimum accepted SSL/TLS protocol version (Default: TLS 1.0)
+    pub fn max_version(&mut self, version: SSLVersion) {
+        unsafe {
+            let minor = match version {
+                SSLVersion::SSLv3 => MBEDTLS_SSL_MINOR_VERSION_0,
+                SSLVersion::TLSv1_0 => MBEDTLS_SSL_MINOR_VERSION_1,
+                SSLVersion::TLSv1_1 => MBEDTLS_SSL_MINOR_VERSION_2,
+                SSLVersion::TLSv1_2 => MBEDTLS_SSL_MINOR_VERSION_3,
+            };
+
+            bindings::mbedtls_ssl_conf_max_version(
+                &mut self.inner, MBEDTLS_SSL_MAJOR_VERSION_3, minor
             );
         }
     }
