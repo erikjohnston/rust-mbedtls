@@ -39,3 +39,9 @@ pub fn get_ciphersuite_name(suite_id: i32) -> &'static CStr {
         CStr::from_ptr(name)
     }
 }
+
+pub fn get_ciphersuite_id(ciphersuite_name: &CStr) -> i32 {
+    unsafe {
+        bindings::mbedtls_ssl_get_ciphersuite_id(ciphersuite_name.as_ptr())
+    }
+}
