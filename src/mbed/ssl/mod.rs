@@ -19,6 +19,8 @@ use std::ffi::CStr;
 
 pub enum SSLAlertLevel { Fatal, Warning }
 
+
+/// Returns the list of ciphersuites supported by the SSL/TLS module.
 pub fn list_ciphersuites() -> &'static [i32] {
     unsafe {
         let suite_ids = bindings::mbedtls_ssl_list_ciphersuites();
@@ -32,6 +34,8 @@ pub fn list_ciphersuites() -> &'static [i32] {
     }
 }
 
+
+/// Return the name of the ciphersuite associated with the given ID.
 pub fn get_ciphersuite_name(suite_id: i32) -> &'static CStr {
     unsafe {
         let name = bindings::mbedtls_ssl_get_ciphersuite_name(suite_id);
@@ -40,6 +44,8 @@ pub fn get_ciphersuite_name(suite_id: i32) -> &'static CStr {
     }
 }
 
+
+/// Return the ID of the ciphersuite associated with the given name.
 pub fn get_ciphersuite_id(ciphersuite_name: &CStr) -> i32 {
     unsafe {
         bindings::mbedtls_ssl_get_ciphersuite_id(ciphersuite_name.as_ptr())
