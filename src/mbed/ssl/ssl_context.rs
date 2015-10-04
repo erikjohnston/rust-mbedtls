@@ -1,6 +1,7 @@
 use super::bindings;
 use super::error;
 use std::marker::PhantomData;
+use super::ssl_config::SSLConfig;
 
 use std::ffi::CStr;
 use std::io;
@@ -29,6 +30,18 @@ impl <'a> SSLContext<'a> {
         ctx
     }
 
+
+    pub fn setup(&mut self, config: &'a SSLConfig) -> Result<(), error::SSLAllocError> {
+        let r = unsafe {
+            bindings::mbedtls_ssl_setup(
+                &mut self.inner,
+                config.inner(),
+            )
+        };
+
+        error::SSLAllocError::from_code(r).map(|_| ())
+    }
+
     /// Set hostname for ServerName TLS extension (client-side only)
     pub fn set_hostname(&mut self, hostname: &CStr) -> Result<(), error::SSLAllocError> {
         let r = unsafe {
@@ -52,6 +65,46 @@ impl <'a> SSLContext<'a> {
                 None,
             );
         };
+    }
+
+    pub fn handshake(&mut self) -> Result<(), error::SSLError> {
+        let r = unsafe {
+            bindings::mbedtls_ssl_handshake(
+                &mut self.inner,
+            )
+        };
+
+        error::SSLError::from_code(r).map(|_| ())
+    }
+
+    pub fn write(&mut self, buf: &[u8]) -> Result<usize, error::SSLError> {
+        let r = unsafe {
+            bindings::mbedtls_ssl_write(
+                &mut self.inner,
+                buf.as_ptr(), buf.len() as u64
+            )
+        };
+
+        error::SSLError::from_code(r).map(|i| i as usize)
+    }
+
+    pub fn read(&mut self, buf: &mut [u8]) -> Result<usize, error::SSLError> {
+        let r = unsafe {
+            bindings::mbedtls_ssl_read(
+                &mut self.inner,
+                buf.as_mut_ptr(), buf.len() as u64
+            )
+        };
+
+        error::SSLError::from_code(r).map(|i| i as usize)
+    }
+
+    pub fn close_notify(&mut self) -> Result<(), error::SSLError> {
+        let r = unsafe {
+            bindings::mbedtls_ssl_close_notify(&mut self.inner)
+        };
+
+        error::SSLError::from_code(r).map(|_| ())
     }
 }
 

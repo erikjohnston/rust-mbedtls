@@ -29,6 +29,10 @@ impl <'a> SSLConfig<'a> {
         ctx
     }
 
+    pub unsafe fn inner(&self) -> *const bindings::mbedtls_ssl_config {
+        &self.inner
+    }
+
     /// Load reasonnable default SSL configuration values.
     pub fn set_defaults(&mut self, endpoint: EndpointType, transport: TransportType, preset: SSLPreset)
     -> Result<(), AllocFailedError> {
