@@ -54,7 +54,7 @@ fn main() {
         let size_read = attempt_io(|| ssl_context.read(&mut buffer));
 
         println!(
-            "Read: {} bytes: {}",
+            "Read: {} bytes:\n---\n{}\n---",
             size_read, str::from_utf8(&buffer[..size_read]).unwrap()
         );
 
