@@ -1,8 +1,7 @@
-use super::bindings;
-use super::error;
-use std::marker::PhantomData;
+use super::{bindings, constants, error, SSLAlertLevel};
 use super::ssl_config::SSLConfig;
 
+use std::marker::PhantomData;
 use std::ffi::CStr;
 use std::io;
 use std::mem::transmute;
@@ -67,6 +66,13 @@ impl <'a> SSLContext<'a> {
         };
     }
 
+    /// Perform the SSL handshake.
+    ///
+    /// Note:
+    /// If this function returns non-zero, then the ssl context becomes unusable, and you should
+    /// either free it or call mbedtls_ssl_session_reset() on it before re-using it. If DTLS is in
+    /// use, then you may choose to handle MBEDTLS_ERR_SSL_HELLO_VERIFY_REQUIRED specially for
+    /// logging purposes, but you still need to reset/free the context.
     pub fn handshake(&mut self) -> Result<(), error::SSLError> {
         let r = unsafe {
             bindings::mbedtls_ssl_handshake(
@@ -77,6 +83,16 @@ impl <'a> SSLContext<'a> {
         error::SSLError::from_code(r).map(|_| ())
     }
 
+    /// Try to write exactly 'len' application data bytes.
+    ///
+    /// Warning: This function will do partial writes in some cases. If the return value is
+    /// non-negative but less than length, the function must be called again with updated
+    /// arguments: buf + ret, len - ret (if ret is the return value) until it returns a value
+    /// equal to the last 'len' argument.
+    ///
+    /// Note:
+    /// When this function returns MBEDTLS_ERR_SSL_WANT_WRITE/READ, it must be called later with
+    /// the same arguments, until it returns a positive value.
     pub fn write(&mut self, buf: &[u8]) -> Result<usize, error::SSLError> {
         let r = unsafe {
             bindings::mbedtls_ssl_write(
@@ -88,6 +104,9 @@ impl <'a> SSLContext<'a> {
         error::SSLError::from_code(r).map(|i| i as usize)
     }
 
+    /// Read at most 'len' application data bytes.
+    ///
+    /// Returns: the number of bytes read, or 0 for EOF, or a negative error code.
     pub fn read(&mut self, buf: &mut [u8]) -> Result<usize, error::SSLError> {
         let r = unsafe {
             bindings::mbedtls_ssl_read(
@@ -99,9 +118,49 @@ impl <'a> SSLContext<'a> {
         error::SSLError::from_code(r).map(|i| i as usize)
     }
 
+    /// Notify the peer that the connection is being closed.
     pub fn close_notify(&mut self) -> Result<(), error::SSLError> {
         let r = unsafe {
             bindings::mbedtls_ssl_close_notify(&mut self.inner)
+        };
+
+        error::SSLError::from_code(r).map(|_| ())
+    }
+
+    /// Reset an already initialized SSL context for re-use while retaining application-set
+    /// variables, function pointers and data.
+    pub fn session_reset(&mut self) -> Result<(), error::SSLError> {
+        let r = unsafe {
+            bindings::mbedtls_ssl_session_reset(&mut self.inner)
+        };
+
+        error::SSLError::from_code(r).map(|_| ())
+    }
+
+    /// Initiate an SSL renegotiation on the running connection.
+    ///
+    /// Client: perform the renegotiation right now.
+    /// Server: request renegotiation, which will be performed during the next call to
+    /// read() if honored by client.
+    pub fn renegotiate(&mut self) -> Result<(), error::SSLError> {
+        let r = unsafe {
+            bindings::mbedtls_ssl_renegotiate(&mut self.inner)
+        };
+
+        error::SSLError::from_code(r).map(|_| ())
+    }
+
+    /// Send an alert message
+    pub fn send_alert_message(&mut self, level: SSLAlertLevel, message: u8)
+    -> Result<(), error::SSLError> {
+        let level_char = match level {
+            SSLAlertLevel::Warning => constants::MBEDTLS_SSL_ALERT_LEVEL_WARNING,
+            SSLAlertLevel::Fatal => constants::MBEDTLS_SSL_ALERT_LEVEL_FATAL,
+        };
+        let r = unsafe {
+            bindings::mbedtls_ssl_send_alert_message(
+                &mut self.inner, level_char, message
+            )
         };
 
         error::SSLError::from_code(r).map(|_| ())

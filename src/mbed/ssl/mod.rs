@@ -12,3 +12,6 @@ mod x509_cert;
 pub use self::ssl_context::*;
 pub use self::ssl_config::*;
 pub use self::x509_cert::*;
+
+
+pub enum SSLAlertLevel { Fatal, Warning }
