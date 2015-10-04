@@ -2,7 +2,7 @@
 name = "mbedtls"
 version = "0.1.0"
 authors = ["Erik Johnston"]
-build = "build.rs"
+# build = "build.rs"
 
 [dependencies]
 time = "0.1"
