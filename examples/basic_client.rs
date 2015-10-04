@@ -20,8 +20,9 @@ fn main() {
         let mut entropy = mbedtls::mbed::entropy::EntropyContext::new();
         let mut entropy_func = |d : &mut[u8] | entropy.entropy_func(d);
 
-        let mut ctr_drbg = mbed::ctr_drbg::CtrDrbgContext::new();
-        ctr_drbg.seed(&mut entropy_func, None).unwrap();
+        let mut ctr_drbg = mbed::ctr_drbg::CtrDrbgContext::with_seed(
+            &mut entropy_func, None
+        ).unwrap();
 
         let mut random_func = |f:  &mut[u8] | ctr_drbg.random(f);
 

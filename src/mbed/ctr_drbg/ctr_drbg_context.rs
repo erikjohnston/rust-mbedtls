@@ -18,22 +18,28 @@ pub struct CtrDrbgContext<'a> {
 
 
 impl <'a> CtrDrbgContext<'a> {
-    pub fn new() -> Self {
+    pub fn with_seed<E, F: FnMut(&mut[u8]) -> Result<(),E>>(
+        mut entropy_func: &'a mut F,
+        customization: Option<&[u8]>
+    ) -> Result<Self, error::EntropyError> {
         let mut ctx = CtrDrbgContext {
             inner: bindings::mbedtls_ctr_drbg_context::default(),
             phantom: PhantomData,
         };
+
         unsafe {
             bindings::mbedtls_ctr_drbg_init(&mut ctx.inner);
         }
 
-        ctx
+        try!(ctx.seed(entropy_func, customization));
+
+        Ok(ctx)
     }
 
     /// CTR_DRBG initial seeding Seed and setup entropy source for future reseeds
     ///
     /// Corresponds to: mbedtls_ctr_drbg_seed
-    pub fn seed<E, F: FnMut(&mut[u8]) -> Result<(),E>>(
+    pub fn seed<E, F: FnMut(&mut[u8]) -> Result<(), E>>(
         &mut self,
         mut entropy_func: &'a mut F,
         customization: Option<&[u8]>
